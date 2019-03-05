@@ -5,26 +5,25 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
 
-function sendJSONXMLHTTPRequest(url, objects, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState==4) {
-            try {
-                if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
-                }
-            }
-            catch(e) {
-                alert('Error: ' + e.name);
-            }
-        }
-    };
-    //XXX: POST to a URL
-    //XXX: set the mimetype and the accept headers!
-    // Remember to use application/json !
-}
-
+// function sendJSONXMLHTTPRequest(url, objects, callback) {
+//     var xhr = new XMLHttpRequest();
+//     xhr.onreadystatechange = function () {
+//         if (xhr.readyState==4) {
+//             try {
+//                 if (xhr.status==200) {
+//                     //XXX: parse some JSON from the request!
+//                     //XXX: Pass the data to the callback!
+//                 }
+//             }
+//             catch(e) {
+//                 alert('Error: ' + e.name);
+//             }
+//         }
+//     };
+//     //XXX: POST to a URL
+//     //XXX: set the mimetype and the accept headers!
+//     // Remember to use application/json !
+// }
 
 world = {};
 
@@ -106,6 +105,13 @@ function getPosition(e) {
 	}
 }
 
+// UUID generation taken from https://gist.github.com/jed/982883
+// Mar 5th, 2019 at 3:10PM
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    )
+  }
 
 function addEntity(entity, data) {
     world[entity] = data;
@@ -114,10 +120,11 @@ function addEntity(entity, data) {
 
 }
 
+// uuid for collisions!
 var counter = 0;
 function addEntityWithoutName(data) {
     //var name = "X"+Math.floor((Math.random()*100)+1);
-    var name = "X"+(counter++)%100;
+    var name = uuidv4();
     addEntity(name,data);
 }
 
