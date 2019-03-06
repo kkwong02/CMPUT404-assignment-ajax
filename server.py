@@ -22,7 +22,8 @@
 
 
 import flask
-from flask import Flask, request, send_from_directory, redirect, url_for
+from flask import Flask, request, send_from_directory, redirect, url_for, jsonify, Response
+from flask.views import MethodView
 import json
 app = Flask(__name__)
 app.debug = True
@@ -69,7 +70,7 @@ def flask_post_json():
     elif (request.data != None and request.data.decode("utf8") != u''):
         return json.loads(request.data.decode("utf8"))
     else:
-        return json.loads(request.form.keys()[0])
+        return json.loads(next(request.form.keys()))
 
 @app.route("/static/<path:filename>")
 def serve_static(filename):
@@ -79,26 +80,53 @@ def serve_static(filename):
 def index():
     return redirect((url_for("serve_static", filename="index.html")))
 
-@app.route("/entity/<entity>", methods=['POST','PUT'])
-def update(entity):
-    '''update the entities via this interface'''
-    return None
 
-@app.route("/world", methods=['POST','GET'])
-def world():
-    '''you should probably return the world here'''
-    return None
+class EntityView(MethodView):
+    def get(self, entity):
+        data = myWorld.get(entity)
+        if not data:
+            response = Response()
+            response.status_code = 404
+            return response
 
-@app.route("/entity/<entity>")
-def get_entity(entity):
-    '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+        return jsonify(data)
 
-@app.route("/clear", methods=['POST','GET'])
+    def post(self, entity):
+        return self.put(entity)
+
+    def put(self, entity):
+        if entity not in myWorld.world():
+            code = 201
+        else:
+            code = 200
+
+        myWorld.set(entity, flask_post_json())
+
+        response = Response()
+        response.status_code = code
+
+        return response
+
+app.add_url_rule("/entity/<entity>", methods=['POST','PUT', 'GET'], view_func=EntityView.as_view("EntityView"))
+
+class WorldView(MethodView):
+    def get(self):
+        return jsonify(myWorld.world())
+
+    def post(self):
+        print(flask_post_json())
+        return jsonify(myWorld.world())
+
+app.add_url_rule("/world", methods=("POST", "GET"), view_func=WorldView.as_view("WorldView"))
+
+
+@app.route("/clear", methods=['POST'])
 def clear():
     '''Clear the world out!'''
     myWorld.clear()
-    return None
+    return jsonify(myWorld.world())
+
+
 
 if __name__ == "__main__":
     app.run()
