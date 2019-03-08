@@ -5,6 +5,27 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
 
+
+function fetchWorld(){
+    var request = new Request("http://"+ host + "/world");
+    return fetch(request).then(response => {return response.json()}).catch(error => {console.log(error)});
+}
+
+function sendFrame(entity, data) {
+    var request = new Request("http://" + host + "/entity/" + entity, {
+        method: "PUT",
+        headers: new Headers({"Content-Type": "application/json"}),
+        body: JSON.stringify(data)
+    });
+    return fetch(request).then(response => response.json).catch(e => {console.log(e)});
+}
+
+function sendClear() {
+    var request = new Request("http://" + host + "/clear", {method: "POST"})
+    return fetch(request).catch(e => {console.log(error)});
+}
+
+
 // function sendJSONXMLHTTPRequest(url, objects, callback) {
 //     var xhr = new XMLHttpRequest();
 //     xhr.onreadystatechange = function () {
@@ -25,6 +46,7 @@ var H = canvas.height = window.innerHeight-50;
 //     // Remember to use application/json !
 // }
 
+
 world = {};
 
 //XXX: TODO Make this prettier!
@@ -39,6 +61,7 @@ function drawCircle(context,entity) {
         strokeStyle = fillStyle;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);
         stroke();
+        fill();
     }
 }
 
@@ -93,7 +116,7 @@ function getPosition(e) {
 	if ( e.targetTouches && e.targetTouches.length > 0) {
 		var touch = e.targetTouches[0];
 		var x = touch.pageX  - canvas.offsetLeft;
-		var y = touch.pageY  - canvas.offsetTop;
+		var y = touch.pageY  - canvasonclick.offsetTop;
 		return [x,y];
 	} else {
 		var rect = e.target.getBoundingClientRect();
@@ -105,23 +128,21 @@ function getPosition(e) {
 	}
 }
 
+
+function addEntity(entity, data) {
+    world[entity] = data;
+    drawNextFrame(); // (but should we?)
+    sendFrame(entity, data);
+}
+
 // UUID generation taken from https://gist.github.com/jed/982883
 // Mar 5th, 2019 at 3:10PM
 function uuidv4() {
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
       (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     )
-  }
-
-function addEntity(entity, data) {
-    world[entity] = data;
-    drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
-
 }
 
-// uuid for collisions!
-var counter = 0;
 function addEntityWithoutName(data) {
     //var name = "X"+Math.floor((Math.random()*100)+1);
     var name = uuidv4();
@@ -227,23 +248,36 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple', 'radius':10});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple', 'radius':10});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple',
                           'radius':10});
 });
 
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+
+    fetchWorld().then(data => {
+        world = data;
+        drawNextFrame();
+    });
+
     drawFrame();
 }
+
+button = document.getElementById("clear")
+button.addEventListener("click", e => {
+    sendClear().then(response => {
+        clearFrame();
+    })
+});
 
 // 30 frames per second
 setInterval( update, 1000/30.0);

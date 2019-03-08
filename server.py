@@ -22,7 +22,7 @@
 
 
 import flask
-from flask import Flask, request, send_from_directory, redirect, url_for, jsonify, Response
+from flask import Flask, request, send_from_directory, redirect, url_for, jsonify
 from flask.views import MethodView
 import json
 app = Flask(__name__)
@@ -84,28 +84,14 @@ def index():
 class EntityView(MethodView):
     def get(self, entity):
         data = myWorld.get(entity)
-        if not data:
-            response = Response()
-            response.status_code = 404
-            return response
-
         return jsonify(data)
 
     def post(self, entity):
         return self.put(entity)
 
     def put(self, entity):
-        if entity not in myWorld.world():
-            code = 201
-        else:
-            code = 200
-
         myWorld.set(entity, flask_post_json())
-
-        response = Response()
-        response.status_code = code
-
-        return response
+        return jsonify(myWorld.get(entity))
 
 app.add_url_rule("/entity/<entity>", methods=['POST','PUT', 'GET'], view_func=EntityView.as_view("EntityView"))
 
